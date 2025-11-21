@@ -64,18 +64,19 @@ async def extract_listing_urls_from_page(
 ) -> List[str]:
     """
     Extracts listing URLs from a search results page.
-    
+    Simple and direct - just gets all /buy/ URLs.
+
     Args:
         crawler: The web crawler instance
         page_url: URL of the search results page
         session_id: Session identifier
         base_url: Base URL for the website
-    
+
     Returns:
         List of listing URLs
     """
     print(f"Extracting listing URLs from: {page_url}")
-    
+
     try:
         result = await crawler.arun(
             url=page_url,
@@ -84,112 +85,76 @@ async def extract_listing_urls_from_page(
                 session_id=session_id,
             ),
         )
-        
+
         # Handle various error cases
         if not result.success:
             error_msg = result.error_message or "Unknown error"
-            
+
             # Check for 404 or page not found errors
             if '404' in str(error_msg) or 'not found' in error_msg.lower():
                 print(f"  Warning: Page does not exist (404): {page_url}")
                 return []
-            
+
             # Check for other HTTP errors
             if '403' in str(error_msg) or 'forbidden' in error_msg.lower():
                 print(f"  Warning: Page is forbidden (403): {page_url}")
                 return []
-            
+
             if '500' in str(error_msg) or 'server error' in error_msg.lower():
                 print(f"  Warning: Server error (500): {page_url}")
                 return []
-            
+
             print(f"  Warning: Error fetching page: {error_msg}")
             return []
-        
+
         # Check if HTML content exists
         if not result.cleaned_html or not result.cleaned_html.strip():
             print(f"  Warning: Page returned empty content: {page_url}")
             return []
-            
+
     except Exception as e:
         print(f"  Warning: Exception while fetching page: {str(e)}")
         return []
-    
-    # Parse HTML to extract listing URLs with error handling
+
+    # Parse HTML to extract listing URLs - simple and direct
     try:
         soup = BeautifulSoup(result.cleaned_html, 'html.parser')
         listing_urls = []
-        
-        # Try different selectors to find listing links
-        # Common patterns: links containing '/buy/' or '/ad/' or similar
-        selectors = [
-            "a[href*='/buy/']",
-            "a[href*='/ad/']",
-            "a[href*='/listing/']",
-            ".listing-link",
-            ".ad-link",
-            ".item-link",
-        ]
-        
         seen_urls = set()
-        for selector in selectors:
+
+        # Find all links with /buy/ in href
+        all_links = soup.find_all('a', href=True)
+
+        for link in all_links:
             try:
-                links = soup.select(selector)
-                for link in links:
-                    try:
-                        href = link.get('href', '') if link else ''
-                        if href:
-                            # Convert relative URLs to absolute
-                            if href.startswith('/'):
-                                full_url = urljoin(base_url, href)
-                            elif href.startswith('http'):
-                                full_url = href
-                            else:
-                                full_url = urljoin(page_url, href)
-                            
-                            # Filter to only include /buy/ URLs (based on example)
-                            if '/buy/' in full_url and full_url not in seen_urls:
-                                listing_urls.append(full_url)
-                                seen_urls.add(full_url)
-                    except Exception as e:
-                        # Skip this link if there's an error processing it
-                        continue
-                
-                if listing_urls:
-                    break  # Stop if we found URLs with this selector
-            except Exception as e:
-                # Skip this selector if there's an error
+                href = link.get('href', '')
+                if not href or '/buy/' not in href:
+                    continue
+
+                # Convert relative URLs to absolute
+                if href.startswith('/'):
+                    full_url = urljoin(base_url, href)
+                elif href.startswith('http'):
+                    full_url = href
+                else:
+                    full_url = urljoin(page_url, href)
+
+                # Skip duplicates
+                if full_url in seen_urls:
+                    continue
+
+                listing_urls.append(full_url)
+                seen_urls.add(full_url)
+
+            except Exception:
+                # Skip this link if there's an error
                 continue
-        
-        # If no URLs found with selectors, try regex pattern matching
-        if not listing_urls:
-            try:
-                # Look for URLs in href attributes
-                all_links = soup.find_all('a', href=True)
-                for link in all_links:
-                    try:
-                        href = link.get('href', '') if link else ''
-                        if href and '/buy/' in href:
-                            if href.startswith('/'):
-                                full_url = urljoin(base_url, href)
-                            elif href.startswith('http'):
-                                full_url = href
-                            else:
-                                full_url = urljoin(page_url, href)
-                            
-                            if full_url not in seen_urls:
-                                listing_urls.append(full_url)
-                                seen_urls.add(full_url)
-                    except Exception:
-                        continue
-            except Exception as e:
-                print(f"  Warning: Error in fallback URL extraction: {str(e)}")
-        
-        print(f"Found {len(listing_urls)} listing URLs on this page")
+
+        print(f"Found {len(listing_urls)} listing URLs")
         return listing_urls
-        
+
     except Exception as e:
-        print(f"  Warning: Error parsing HTML for page {page_number}: {str(e)}")
+        print(f"  Warning: Error parsing HTML: {str(e)}")
         return []
 
 
@@ -549,21 +514,32 @@ async def fetch_listing_urls_from_page(
 ) -> List[str]:
     """
     Fetches listing URLs from a specific page number.
-    
+    Simple and direct - no filtering.
+
     Args:
         crawler: The web crawler instance
         page_number: Page number to fetch
-        base_url: Base URL for search pages
+        base_url: Base URL for search pages (e.g., https://riyasewana.com/search/cars)
         session_id: Session identifier
-    
+
     Returns:
         List of listing URLs
     """
-    # Construct page URL - adjust based on actual URL pattern
-    if '?' in base_url:
-        page_url = f"{base_url}&page={page_number}"
+    # Construct page URL using the pattern: https://riyasewana.com/search/cars?page=2
+    if page_number == 1:
+        # Page 1 doesn't need the page parameter
+        page_url = base_url
     else:
-        page_url = f"{base_url}?page={page_number}"
-    
-    return await extract_listing_urls_from_page(crawler, page_url, session_id)
+        # Pages 2+ use ?page=N or &page=N depending on existing query string
+        if '?' in base_url:
+            page_url = f"{base_url}&page={page_number}"
+        else:
+            page_url = f"{base_url}?page={page_number}"
+
+    return await extract_listing_urls_from_page(
+        crawler,
+        page_url,
+        session_id,
+        base_url="https://riyasewana.com"
+    )
 

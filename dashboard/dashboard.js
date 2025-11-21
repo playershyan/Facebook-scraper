@@ -132,24 +132,24 @@ class Dashboard {
         // Elapsed time
         const elapsed = this.formatTime(timeData.elapsed_seconds || 0);
         document.getElementById('time-elapsed').textContent = elapsed;
-        
+
         // Remaining time
         const remaining = timeData.remaining_seconds || 0;
         if (remaining > 0) {
             document.getElementById('time-remaining').textContent = this.formatTime(remaining);
         } else {
-            document.getElementById('time-remaining').textContent = 'Calculating...';
+            document.getElementById('time-remaining').textContent = '-';
         }
-        
+
         // Rate
         const rate = timeData.rate_per_minute || 0;
-        document.getElementById('time-rate').textContent = rate.toFixed(2) + '/min';
-        
-        // Estimated completion
+        document.getElementById('time-rate').textContent = rate.toFixed(1) + '/min';
+
+        // Estimated completion - show only time, not full date
         if (timeData.estimated_completion) {
             const completion = new Date(timeData.estimated_completion);
-            document.getElementById('time-completion').textContent = 
-                completion.toLocaleString();
+            document.getElementById('time-completion').textContent =
+                completion.toLocaleTimeString();
         } else {
             document.getElementById('time-completion').textContent = '-';
         }
@@ -168,18 +168,22 @@ class Dashboard {
     }
 
     updateWorkers(workers) {
+        const section = document.getElementById('workers-section');
         const container = document.getElementById('workers-container');
-        
-        if (Object.keys(workers).length === 0) {
-            container.innerHTML = '<div class="no-data">No worker data available yet</div>';
+
+        // Hide workers section if no workers
+        if (!workers || Object.keys(workers).length === 0) {
+            section.style.display = 'none';
             return;
         }
-        
+
+        // Show workers section
+        section.style.display = 'block';
         container.innerHTML = '';
-        
+
         // Sort workers by ID
         const workerIds = Object.keys(workers).sort((a, b) => parseInt(a) - parseInt(b));
-        
+
         workerIds.forEach(workerId => {
             const worker = workers[workerId];
             const workerItem = this.createWorkerElement(workerId, worker);
@@ -223,9 +227,9 @@ class Dashboard {
 
     updateLastUpdate(timestamp) {
         if (!timestamp) return;
-        
+
         const date = new Date(timestamp);
-        document.getElementById('last-update').textContent = date.toLocaleString();
+        document.getElementById('last-update').textContent = date.toLocaleTimeString();
     }
 
     displayError(message) {

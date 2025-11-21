@@ -2,7 +2,7 @@
 
 BASE_URL = "https://riyasewana.com/search/cars"
 LISTING_BASE_URL = "https://riyasewana.com"  # Base URL for listing pages
-TOTAL_PAGES = 635
+TOTAL_PAGES = 665  # Updated to actual page count
 LISTINGS_PER_PAGE = 44
 
 # Output configuration

@@ -97,7 +97,7 @@ async def test_scrape_1_page():
             try:
                 print(f"\n[Page {page_num}/{TEST_PAGES}] Processing...")
                 
-                # Extract listing URLs
+                # Extract listing URLs from search page
                 listing_urls = await safe_operation(
                     fetch_listing_urls_from_page,
                     error_handler,
@@ -106,23 +106,23 @@ async def test_scrape_1_page():
                     base_url=BASE_URL,
                     session_id=session_crawl_id,
                 )
-                
+
                 if not listing_urls:
                     print(f"  No URLs found on page {page_num}")
                     stats['errors'] += 1
                     continue
-                
+
                 stats['total_urls_found'] += len(listing_urls)
                 print(f"  Found {len(listing_urls)} listing URLs")
-                
+
                 # Process first 3 listings for quick test
                 for idx, listing_url in enumerate(listing_urls[:3], 1):
                     if is_duplicate_listing(listing_url, seen_urls):
                         stats['duplicates_skipped'] += 1
                         continue
-                    
+
                     print(f"    [{idx}/3] Extracting: {listing_url[:60]}...")
-                    
+
                     listing_data = await safe_operation(
                         extract_listing_details,
                         error_handler,
@@ -132,7 +132,7 @@ async def test_scrape_1_page():
                         session_id=session_crawl_id,
                         use_llm_fallback=llm_strategy is not None,
                     )
-                    
+
                     if listing_data and is_complete_listing(listing_data, REQUIRED_KEYS):
                         seen_urls.add(listing_url)
                         all_listings.append(listing_data)
@@ -140,7 +140,7 @@ async def test_scrape_1_page():
                         print(f"      ✓ Extracted: {listing_data.get('title', 'N/A')[:50]}...")
                     else:
                         print(f"      ✗ Failed to extract complete data")
-                    
+
                     await asyncio.sleep(LISTING_DELAY)
                 
                 stats['pages_processed'] += 1
