@@ -114,14 +114,14 @@ async def test_scrape_1_page():
 
                 stats['total_urls_found'] += len(listing_urls)
                 print(f"  Found {len(listing_urls)} listing URLs")
-
-                # Process first 3 listings for quick test
-                for idx, listing_url in enumerate(listing_urls[:3], 1):
+                
+                # Process all listings (removed [:3] limit for full extraction)
+                for idx, listing_url in enumerate(listing_urls, 1):
                     if is_duplicate_listing(listing_url, seen_urls):
                         stats['duplicates_skipped'] += 1
                         continue
 
-                    print(f"    [{idx}/3] Extracting: {listing_url[:60]}...")
+                    print(f"    [{idx}/{len(listing_urls)}] Extracting: {listing_url[:60]}...")
 
                     listing_data = await safe_operation(
                         extract_listing_details,
