@@ -1,0 +1,5 @@
+Crawl4AI==0.4.247
+python-dotenv==1.0.1
+pydantic==2.10.6
+Flask==3.0.3
+flask-cors==4.0.1

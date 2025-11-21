@@ -1,0 +1,12 @@
+.env
+*.csv
+__pycache__
+output/
+sessions/
+scraper_progress.json
+*.pyc
+*.pyo
+*.pyd
+venv/
+env/
+.venv/
