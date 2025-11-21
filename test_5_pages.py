@@ -109,6 +109,13 @@ async def test_scrape_5_pages():
                 stats['total_urls_found'] += len(listing_urls)
                 print(f"  Found {len(listing_urls)} listing URLs")
 
+                # Update progress immediately after finding URLs
+                progress_tracker.update_listings(
+                    found=stats['total_urls_found'],
+                    extracted=stats['listings_extracted'],
+                    saved=len(all_listings),
+                )
+
                 # Process each listing (limit to 5 per page for test)
                 for idx, listing_url in enumerate(listing_urls[:5], 1):
                     if is_duplicate_listing(listing_url, seen_urls):
@@ -132,6 +139,13 @@ async def test_scrape_5_pages():
                         all_listings.append(listing_data)
                         stats['listings_extracted'] += 1
                         print(f"      ✓ Extracted: {listing_data.get('title', 'N/A')[:50]}...")
+
+                        # ✅ REAL-TIME UPDATE: Update progress after EACH listing
+                        progress_tracker.update_listings(
+                            found=stats['total_urls_found'],
+                            extracted=stats['listings_extracted'],
+                            saved=len(all_listings),
+                        )
                     else:
                         print(f"      ✗ Failed to extract complete data")
 
