@@ -3,23 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Riyasewana Scraper Dashboard</title>
+    <title>Scraper Dashboard</title>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
     <div class="container">
         <header>
             <h1 id="dashboard-title">Riyasewana Scraper Dashboard</h1>
-            <div class="status-badge" id="status-badge">
+            <div class="status-badge">
                 <span class="status-dot" id="status-dot"></span>
                 <span id="status-text">Initializing...</span>
             </div>
         </header>
 
         <main>
-            <!-- Overall Progress Section -->
-            <section class="card progress-card">
-                <h2>Overall Progress</h2>
+            <!-- Progress Section -->
+            <section class="card">
+                <h2>Progress</h2>
                 <div class="progress-bar-container">
                     <div class="progress-bar">
                         <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
@@ -29,7 +29,6 @@
                         <span id="progress-details">0 / 0 pages</span>
                     </div>
                 </div>
-                
                 <div class="stats-grid">
                     <div class="stat-item">
                         <div class="stat-label">Completed</div>
@@ -43,38 +42,19 @@
                         <div class="stat-label">Total</div>
                         <div class="stat-value" id="stat-total">0</div>
                     </div>
-                </div>
-            </section>
-
-            <!-- Time Estimates Section -->
-            <section class="card time-card">
-                <h2>Time Estimates</h2>
-                <div class="stats-grid">
                     <div class="stat-item">
-                        <div class="stat-label">Elapsed Time</div>
-                        <div class="stat-value" id="time-elapsed">0s</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Remaining Time</div>
-                        <div class="stat-value" id="time-remaining">Calculating...</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Rate</div>
-                        <div class="stat-value" id="time-rate">0/min</div>
-                    </div>
-                    <div class="stat-item">
-                        <div class="stat-label">Estimated Completion</div>
-                        <div class="stat-value" id="time-completion">-</div>
+                        <div class="stat-label">Errors</div>
+                        <div class="stat-value error" id="stat-errors">0</div>
                     </div>
                 </div>
             </section>
 
-            <!-- Listings Statistics Section -->
-            <section class="card listings-card">
-                <h2>Listings Statistics</h2>
+            <!-- Listings Section -->
+            <section class="card">
+                <h2>Listings</h2>
                 <div class="stats-grid">
                     <div class="stat-item">
-                        <div class="stat-label">URLs Found</div>
+                        <div class="stat-label">Found</div>
                         <div class="stat-value" id="listings-found">0</div>
                     </div>
                     <div class="stat-item">
@@ -86,36 +66,51 @@
                         <div class="stat-value" id="listings-saved">0</div>
                     </div>
                     <div class="stat-item">
-                        <div class="stat-label">Duplicates Skipped</div>
+                        <div class="stat-label">Duplicates</div>
                         <div class="stat-value" id="listings-duplicates">0</div>
                     </div>
                     <div class="stat-item">
                         <div class="stat-label">Failed</div>
                         <div class="stat-value error" id="listings-failed">0</div>
                     </div>
+                </div>
+            </section>
+
+            <!-- Time Section -->
+            <section class="card">
+                <h2>Time</h2>
+                <div class="stats-grid">
                     <div class="stat-item">
-                        <div class="stat-label">Errors</div>
-                        <div class="stat-value error" id="stat-errors">0</div>
+                        <div class="stat-label">Elapsed</div>
+                        <div class="stat-value" id="time-elapsed">0s</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Remaining</div>
+                        <div class="stat-value" id="time-remaining">-</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">Rate</div>
+                        <div class="stat-value" id="time-rate">0/min</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-label">ETA</div>
+                        <div class="stat-value" id="time-completion">-</div>
                     </div>
                 </div>
             </section>
 
-            <!-- Workers Status Section -->
-            <section class="card workers-card">
-                <h2>Worker Status</h2>
+            <!-- Workers Section (Hidden if no workers) -->
+            <section class="card" id="workers-section" style="display: none;">
+                <h2>Workers</h2>
                 <div id="workers-container" class="workers-container">
-                    <div class="no-data">No worker data available yet</div>
+                    <div class="no-data">No workers active</div>
                 </div>
             </section>
         </main>
 
         <footer>
-            <div class="last-update">
-                Last updated: <span id="last-update">Never</span>
-            </div>
-            <div class="auto-refresh">
-                <span>Auto-refresh: <span id="refresh-status">Enabled</span></span>
-            </div>
+            <div class="last-update">Last updated: <span id="last-update">Never</span></div>
+            <div class="auto-refresh">Auto-refresh every 2s</div>
         </footer>
     </div>
 
