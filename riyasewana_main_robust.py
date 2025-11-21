@@ -239,7 +239,16 @@ async def scrape_listings_worker(
                 
                 stats['total_urls_found'] += len(listing_urls)
                 print(f"  [Worker {worker_id}] Found {len(listing_urls)} listing URLs")
-                
+
+                # ✅ REAL-TIME UPDATE: Update progress immediately after finding URLs
+                if progress_tracker:
+                    progress_tracker.update_listings(
+                        found=stats['total_urls_found'],
+                        extracted=stats['listings_extracted'],
+                        saved=stats['listings_saved'],
+                        duplicates_skipped=stats['duplicates_skipped'],
+                    )
+
                 # Process each listing URL with error handling
                 for idx, listing_url in enumerate(listing_urls, 1):
                     # Skip if already processed
@@ -271,23 +280,41 @@ async def scrape_listings_worker(
                             seen_urls.add(listing_url)
                             all_listings.append(listing_data)
                             stats['listings_extracted'] += 1
+
+                            # ✅ REAL-TIME UPDATE: Update progress after EACH listing
+                            if progress_tracker:
+                                progress_tracker.update_listings(
+                                    found=stats['total_urls_found'],
+                                    extracted=stats['listings_extracted'],
+                                    saved=stats['listings_saved'],
+                                    duplicates_skipped=stats['duplicates_skipped'],
+                                )
                         else:
                             seen_urls.add(listing_url)  # Mark as processed even if incomplete
                     else:
                         failed_urls.append(listing_url)
-                    
+
                     # Save to CSV frequently to prevent data loss
                     if len(all_listings) >= BATCH_SAVE_INTERVAL:
                         try:
                             save_listings_to_csv(all_listings, output_csv)
                             stats['listings_saved'] += len(all_listings)
-                            
+
                             # Update session stats
                             if session_manager:
                                 session_manager.update_session(
                                     stats={"listings_saved": len(all_listings)}
                                 )
-                            
+
+                            # ✅ REAL-TIME UPDATE: Update progress after batch save
+                            if progress_tracker:
+                                progress_tracker.update_listings(
+                                    found=stats['total_urls_found'],
+                                    extracted=stats['listings_extracted'],
+                                    saved=stats['listings_saved'],
+                                    duplicates_skipped=stats['duplicates_skipped'],
+                                )
+
                             all_listings = []
                             print(f"  [Worker {worker_id}] Saved batch to {output_csv}")
                         except Exception as e:
