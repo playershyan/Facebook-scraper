@@ -16,53 +16,6 @@ from crawl4ai import (
 from models.listing import Listing
 
 
-def is_car_listing(title: str) -> bool:
-    """
-    Checks if a listing title indicates a car (not van, motorbike, etc.).
-
-    Args:
-        title: The listing title to check
-
-    Returns:
-        True if the listing appears to be a car, False otherwise
-    """
-    if not title:
-        return False
-
-    title_lower = title.lower()
-
-    # Keywords that indicate NON-car vehicles
-    exclude_keywords = [
-        'van',
-        'motorbike',
-        'motorcycle',
-        'bike',
-        'scooter',
-        'tuk',
-        'three wheeler',
-        'threewheeler',
-        'lorry',
-        'truck',
-        'bus',
-        'tractor',
-        'excavator',
-        'bulldozer',
-        'crane',
-        'boat',
-        'jet ski',
-        'quad',
-        'atv',
-    ]
-
-    # Check if any exclude keyword is in the title
-    for keyword in exclude_keywords:
-        if keyword in title_lower:
-            return False
-
-    # If no exclude keywords found, assume it's a car
-    return True
-
-
 def get_browser_config(headless: bool = True) -> BrowserConfig:
     """
     Returns the browser configuration for the crawler.
@@ -107,22 +60,20 @@ async def extract_listing_urls_from_page(
     crawler: AsyncWebCrawler,
     page_url: str,
     session_id: str,
-    base_url: str = "https://riyasewana.com",
-    filter_cars_only: bool = True
-) -> List[Tuple[str, str]]:
+    base_url: str = "https://riyasewana.com"
+) -> List[str]:
     """
-    Extracts listing URLs and titles from a search results page.
-    Now returns (url, title) tuples to allow filtering before detail extraction.
+    Extracts listing URLs from a search results page.
+    Simple and direct - just gets all /buy/ URLs.
 
     Args:
         crawler: The web crawler instance
         page_url: URL of the search results page
         session_id: Session identifier
         base_url: Base URL for the website
-        filter_cars_only: If True, filter out non-car listings immediately
 
     Returns:
-        List of (url, title) tuples
+        List of listing URLs
     """
     print(f"Extracting listing URLs from: {page_url}")
 
@@ -165,10 +116,10 @@ async def extract_listing_urls_from_page(
         print(f"  Warning: Exception while fetching page: {str(e)}")
         return []
 
-    # Parse HTML to extract listing URLs and titles with error handling
+    # Parse HTML to extract listing URLs - simple and direct
     try:
         soup = BeautifulSoup(result.cleaned_html, 'html.parser')
-        listing_data = []
+        listing_urls = []
         seen_urls = set()
 
         # Find all links with /buy/ in href
@@ -188,46 +139,19 @@ async def extract_listing_urls_from_page(
                 else:
                     full_url = urljoin(page_url, href)
 
-                # Skip if already seen
+                # Skip duplicates
                 if full_url in seen_urls:
                     continue
 
-                # Extract title from the link or nearby elements
-                # The title is usually in the link text or in a parent/child element
-                title = link.get_text(strip=True)
-
-                # If title is empty or too short, try to find it in parent/child elements
-                if not title or len(title) < 10:
-                    # Try parent container
-                    parent = link.find_parent(['div', 'li', 'article'])
-                    if parent:
-                        # Look for heading tags
-                        heading = parent.find(['h1', 'h2', 'h3', 'h4', 'h5', 'h6'])
-                        if heading:
-                            title = heading.get_text(strip=True)
-                        # Or look for specific class names that might contain title
-                        elif parent.find(class_=lambda x: x and ('title' in x.lower() or 'name' in x.lower())):
-                            title_elem = parent.find(class_=lambda x: x and ('title' in x.lower() or 'name' in x.lower()))
-                            title = title_elem.get_text(strip=True)
-
-                # Skip if still no meaningful title
-                if not title or len(title) < 5:
-                    continue
-
-                # Filter out non-cars immediately if requested
-                if filter_cars_only and not is_car_listing(title):
-                    continue
-
-                listing_data.append((full_url, title))
+                listing_urls.append(full_url)
                 seen_urls.add(full_url)
 
-            except Exception as e:
-                # Skip this link if there's an error processing it
+            except Exception:
+                # Skip this link if there's an error
                 continue
 
-        filtered_msg = " (cars only)" if filter_cars_only else ""
-        print(f"Found {len(listing_data)} listing URLs{filtered_msg} on this page")
-        return listing_data
+        print(f"Found {len(listing_urls)} listing URLs")
+        return listing_urls
 
     except Exception as e:
         print(f"  Warning: Error parsing HTML: {str(e)}")
@@ -587,21 +511,19 @@ async def fetch_listing_urls_from_page(
     page_number: int,
     base_url: str,
     session_id: str,
-    filter_cars_only: bool = True
-) -> List[Tuple[str, str]]:
+) -> List[str]:
     """
-    Fetches listing URLs and titles from a specific page number.
-    Filters out non-car listings immediately to save API costs.
+    Fetches listing URLs from a specific page number.
+    Simple and direct - no filtering.
 
     Args:
         crawler: The web crawler instance
         page_number: Page number to fetch
         base_url: Base URL for search pages (e.g., https://riyasewana.com/search/cars)
         session_id: Session identifier
-        filter_cars_only: If True, filter out non-car listings immediately
 
     Returns:
-        List of (url, title) tuples for car listings only
+        List of listing URLs
     """
     # Construct page URL using the pattern: https://riyasewana.com/search/cars?page=2
     if page_number == 1:
@@ -618,7 +540,6 @@ async def fetch_listing_urls_from_page(
         crawler,
         page_url,
         session_id,
-        base_url="https://riyasewana.com",
-        filter_cars_only=filter_cars_only
+        base_url="https://riyasewana.com"
     )
 

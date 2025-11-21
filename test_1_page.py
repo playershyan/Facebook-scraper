@@ -83,7 +83,7 @@ async def test_scrape_1_page():
     # Statistics
     stats = {
         'pages_processed': 0,
-        'total_urls_found': 0,  # Only car URLs (filtered at search page)
+        'total_urls_found': 0,
         'listings_extracted': 0,
         'listings_saved': 0,
         'errors': 0,
@@ -97,33 +97,31 @@ async def test_scrape_1_page():
             try:
                 print(f"\n[Page {page_num}/{TEST_PAGES}] Processing...")
                 
-                # Extract listing URLs and titles (already filtered for cars only)
-                listing_data_tuples = await safe_operation(
+                # Extract listing URLs from search page
+                listing_urls = await safe_operation(
                     fetch_listing_urls_from_page,
                     error_handler,
                     crawler=crawler,
                     page_number=page_num,
                     base_url=BASE_URL,
                     session_id=session_crawl_id,
-                    filter_cars_only=True,  # Filter non-cars immediately
                 )
 
-                if not listing_data_tuples:
-                    print(f"  No car listings found on page {page_num}")
+                if not listing_urls:
+                    print(f"  No URLs found on page {page_num}")
                     stats['errors'] += 1
                     continue
 
-                stats['total_urls_found'] += len(listing_data_tuples)
-                print(f"  Found {len(listing_data_tuples)} car listing URLs (non-cars already filtered)")
+                stats['total_urls_found'] += len(listing_urls)
+                print(f"  Found {len(listing_urls)} listing URLs")
 
                 # Process first 3 listings for quick test
-                for idx, (listing_url, preview_title) in enumerate(listing_data_tuples[:3], 1):
+                for idx, listing_url in enumerate(listing_urls[:3], 1):
                     if is_duplicate_listing(listing_url, seen_urls):
                         stats['duplicates_skipped'] += 1
                         continue
 
-                    print(f"    [{idx}/3] {preview_title[:50]}...")
-                    print(f"           Extracting details from: {listing_url[:60]}...")
+                    print(f"    [{idx}/3] Extracting: {listing_url[:60]}...")
 
                     listing_data = await safe_operation(
                         extract_listing_details,
@@ -139,7 +137,7 @@ async def test_scrape_1_page():
                         seen_urls.add(listing_url)
                         all_listings.append(listing_data)
                         stats['listings_extracted'] += 1
-                        print(f"      ✓ Extracted complete listing data")
+                        print(f"      ✓ Extracted: {listing_data.get('title', 'N/A')[:50]}...")
                     else:
                         print(f"      ✗ Failed to extract complete data")
 
@@ -182,7 +180,7 @@ async def test_scrape_1_page():
         print("TEST COMPLETE")
         print("=" * 60)
         print(f"Pages processed: {stats['pages_processed']}/{TEST_PAGES}")
-        print(f"Car URLs found: {stats['total_urls_found']} (non-cars filtered early)")
+        print(f"URLs found: {stats['total_urls_found']}")
         print(f"Listings extracted: {stats['listings_extracted']}")
         print(f"Listings saved: {stats['listings_saved']}")
         print(f"Output folder: {OUTPUT_DIR}/")
