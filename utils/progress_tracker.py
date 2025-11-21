@@ -79,21 +79,20 @@ class ProgressTracker:
     
     def update_listings(self, **kwargs):
         """
-        Update listing statistics.
-        
+        Update listing statistics with absolute values (not increments).
+        Sets the values directly instead of incrementing.
+
         Args:
-            found: Number of listing URLs found
-            extracted: Number of listings extracted
-            saved: Number of listings saved
-            duplicates_skipped: Number of duplicates skipped
-            failed: Number of failed extractions
+            found: Total number of listing URLs found
+            extracted: Total number of listings extracted
+            saved: Total number of listings saved
+            duplicates_skipped: Total number of duplicates skipped
+            failed: Total number of failed extractions
         """
         for key, value in kwargs.items():
             if key in self.progress["listings"]:
-                if isinstance(value, int):
-                    self.progress["listings"][key] += value
-                else:
-                    self.progress["listings"][key] = value
+                # Set absolute values (not increment)
+                self.progress["listings"][key] = value
         self._save_progress()
     
     def update_worker(self, worker_id: int, **kwargs):

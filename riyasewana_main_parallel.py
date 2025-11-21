@@ -168,7 +168,16 @@ async def scrape_listings_worker(
                 
                 stats['total_urls_found'] += len(listing_urls)
                 print(f"  [Worker {worker_id}] Found {len(listing_urls)} listing URLs")
-                
+
+                # ✅ REAL-TIME UPDATE: Update progress immediately after finding URLs
+                if progress_tracker:
+                    progress_tracker.update_listings(
+                        found=stats['total_urls_found'],
+                        extracted=stats['listings_extracted'],
+                        saved=stats['listings_saved'],
+                        duplicates_skipped=stats['duplicates_skipped'],
+                    )
+
                 # Process each listing URL
                 for idx, listing_url in enumerate(listing_urls, 1):
                     # Skip if already processed (check both local and global seen_urls)
@@ -214,8 +223,17 @@ async def scrape_listings_worker(
                             title_preview = listing_data.get('title', 'N/A')[:50]
                             print(f"    [Worker {worker_id}] [{idx}/{len(listing_urls)}] "
                                   f"Extracted: {title_preview}...")
+
+                            # ✅ REAL-TIME UPDATE: Update progress after EACH listing
+                            if progress_tracker:
+                                progress_tracker.update_listings(
+                                    found=stats['total_urls_found'],
+                                    extracted=stats['listings_extracted'],
+                                    saved=stats['listings_saved'],
+                                    duplicates_skipped=stats['duplicates_skipped'],
+                                )
                         else:
-                            missing_keys = [key for key in REQUIRED_KEYS 
+                            missing_keys = [key for key in REQUIRED_KEYS
                                           if key not in listing_data or not listing_data[key]]
                             print(f"    [Worker {worker_id}] [{idx}/{len(listing_urls)}] "
                                   f"Incomplete (missing: {', '.join(missing_keys)})")
@@ -223,12 +241,22 @@ async def scrape_listings_worker(
                     else:
                         print(f"    [Worker {worker_id}] [{idx}/{len(listing_urls)}] "
                               f"Failed to extract data")
-                    
+
                     # Batch save to CSV periodically
                     if len(all_listings) >= BATCH_SAVE_INTERVAL:
                         # Use file locking to prevent race conditions
                         save_listings_to_csv(all_listings, output_csv)
                         stats['listings_saved'] += len(all_listings)
+
+                        # ✅ REAL-TIME UPDATE: Update progress after batch save
+                        if progress_tracker:
+                            progress_tracker.update_listings(
+                                found=stats['total_urls_found'],
+                                extracted=stats['listings_extracted'],
+                                saved=stats['listings_saved'],
+                                duplicates_skipped=stats['duplicates_skipped'],
+                            )
+
                         all_listings = []  # Clear batch
                         print(f"  [Worker {worker_id}] Saved batch to {output_csv}")
                     
