@@ -2,6 +2,7 @@ import asyncio
 import os
 import sys
 from datetime import datetime
+from pathlib import Path
 from typing import List, Set, Tuple
 
 from crawl4ai import AsyncWebCrawler
@@ -30,8 +31,13 @@ from utils.progress_tracker import get_progress_tracker, reset_progress_tracker
 load_dotenv()
 
 # Configuration
-OUTPUT_CSV = "riyasewana_listings.csv"
+OUTPUT_DIR = "output"  # Folder for CSV files
+OUTPUT_CSV = os.path.join(OUTPUT_DIR, "riyasewana_listings.csv")  # Save to output folder
 BATCH_SAVE_INTERVAL = 10  # Save to CSV every N listings
+
+# Create output directory if it doesn't exist
+from pathlib import Path
+Path(OUTPUT_DIR).mkdir(exist_ok=True)
 
 # Rate limiting delays - increased for parallel workers to be respectful
 # These delays help avoid getting rate-limited by the website
