@@ -4,6 +4,7 @@ Handles scraping listings from Facebook Marketplace with login support.
 """
 
 import time
+import random
 import re
 from typing import Dict, List, Optional, Tuple
 from bs4 import BeautifulSoup
@@ -12,9 +13,21 @@ import config_facebook_marketplace as config
 from models.facebook_marketplace_listing import FacebookMarketplaceListing
 
 
+def random_delay(min_seconds: float = 2.0, max_seconds: float = 5.0) -> None:
+    """
+    Add a random delay to mimic human behavior and avoid bot detection.
+
+    Args:
+        min_seconds: Minimum delay in seconds
+        max_seconds: Maximum delay in seconds
+    """
+    delay = random.uniform(min_seconds, max_seconds)
+    time.sleep(delay)
+
+
 def create_browser_context(headless: bool = False) -> Tuple[Browser, BrowserContext, Page]:
     """
-    Create and configure a Playwright browser context.
+    Create and configure a Playwright browser context with anti-detection measures.
 
     Args:
         headless: Whether to run browser in headless mode
@@ -23,14 +36,45 @@ def create_browser_context(headless: bool = False) -> Tuple[Browser, BrowserCont
         Tuple of (browser, context, page)
     """
     playwright = sync_playwright().start()
-    browser = playwright.chromium.launch(headless=headless)
-    context = browser.new_context(
-        viewport={'width': 1920, 'height': 1080},
-        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36'
+
+    # Launch browser with additional arguments to avoid detection
+    browser = playwright.chromium.launch(
+        headless=headless,
+        args=[
+            '--disable-blink-features=AutomationControlled',  # Hide automation
+            '--disable-dev-shm-usage',
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-web-security',
+            '--disable-features=IsolateOrigins,site-per-process'
+        ]
     )
+
+    # Randomize viewport size slightly to avoid fingerprinting
+    viewport_width = random.randint(1366, 1920)
+    viewport_height = random.randint(768, 1080)
+
+    # Create context with realistic browser settings
+    context = browser.new_context(
+        viewport={'width': viewport_width, 'height': viewport_height},
+        user_agent='Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+        locale='en-US',
+        timezone_id='America/New_York',
+        permissions=['geolocation'],  # Grant permissions like a real user
+        color_scheme='light',
+        device_scale_factor=1
+    )
+
     page = context.new_page()
     page.set_default_timeout(config.BROWSER_TIMEOUT)
     page.set_default_navigation_timeout(config.NAVIGATION_TIMEOUT)
+
+    # Add script to hide webdriver property
+    page.add_init_script("""
+        Object.defineProperty(navigator, 'webdriver', {
+            get: () => undefined
+        });
+    """)
 
     return browser, context, page
 
@@ -57,23 +101,23 @@ def login_to_facebook(page: Page, email: str = None, password: str = None) -> bo
     try:
         print(f"Logging in to Facebook as {email}...")
         page.goto(config.FB_LOGIN_URL)
-        time.sleep(2)
+        random_delay(2.0, 4.0)  # Random delay after page load
 
-        # Fill email
+        # Fill email with human-like typing
         email_input = page.wait_for_selector('input[name="email"]', timeout=10000)
         email_input.fill(email)
+        random_delay(0.5, 1.5)  # Random delay after email input
 
-        # Fill password
+        # Fill password with human-like typing
         password_input = page.wait_for_selector('input[name="pass"]', timeout=10000)
         password_input.fill(password)
-
-        time.sleep(1)
+        random_delay(0.8, 2.0)  # Random delay before clicking login
 
         # Click login button
         login_button = page.wait_for_selector('button[name="login"]', timeout=10000)
         login_button.click()
 
-        time.sleep(3)
+        random_delay(4.0, 7.0)  # Longer random delay after login attempt
 
         # Check if login was successful
         if "login" in page.url.lower():
@@ -191,7 +235,7 @@ def close_popup_dialogs(page: Page) -> None:
         for button in close_buttons:
             try:
                 button.click()
-                time.sleep(0.5)
+                random_delay(0.3, 0.8)  # Random delay after closing popup
             except:
                 pass
     except:
@@ -200,7 +244,7 @@ def close_popup_dialogs(page: Page) -> None:
 
 def scroll_page(page: Page, num_scrolls: int = None) -> None:
     """
-    Scroll the page to load more listings (infinite scroll).
+    Scroll the page to load more listings (infinite scroll) with random human-like delays.
 
     Args:
         page: Playwright page object
@@ -210,7 +254,8 @@ def scroll_page(page: Page, num_scrolls: int = None) -> None:
 
     for i in range(num_scrolls):
         page.keyboard.press('End')
-        time.sleep(config.SCROLL_PAUSE_TIME)
+        # Variable delay between scrolls (1.5 to 4 seconds)
+        random_delay(1.5, 4.0)
         print(f"  Scrolled {i + 1}/{num_scrolls} times...")
 
 
@@ -227,13 +272,14 @@ def extract_listings_from_search_page(page: Page, scroll: bool = True) -> List[D
     """
     # Close any popups
     close_popup_dialogs(page)
+    random_delay(0.5, 1.5)  # Random delay after closing popups
 
     # Scroll to load more listings
     if scroll:
         scroll_page(page)
 
-    # Wait for listings to load
-    time.sleep(2)
+    # Wait for listings to load with random delay
+    random_delay(2.0, 4.0)
 
     # Get page HTML
     html = page.content()
@@ -329,14 +375,14 @@ def extract_listing_details(page: Page, browser: Browser, listing_url: str) -> D
     try:
         # Navigate to listing
         new_page.goto(listing_url, timeout=30000)
-        time.sleep(2)
+        random_delay(2.5, 5.0)  # Random delay after page load
 
         # Close any popups
         try:
             close_button = new_page.query_selector(f'div[aria-label="{config.CLOSE_BUTTON_LABEL}"]')
             if close_button:
                 close_button.click()
-                time.sleep(1)
+                random_delay(0.8, 1.8)  # Random delay after closing popup
         except:
             pass
 
@@ -345,7 +391,7 @@ def extract_listing_details(page: Page, browser: Browser, listing_url: str) -> D
             see_more_buttons = new_page.query_selector_all(f'span:has-text("{config.SEE_MORE_TEXT}")')
             if see_more_buttons:
                 see_more_buttons[-1].click()
-                time.sleep(2)
+                random_delay(1.5, 3.0)  # Random delay after expanding description
         except:
             pass
 
@@ -437,7 +483,7 @@ def scrape_facebook_marketplace(
 
         # Navigate to marketplace
         page.goto(marketplace_url)
-        time.sleep(3)
+        random_delay(3.0, 6.0)  # Random delay after initial page load
 
         # Scrape pages
         for page_num in range(1, max_pages + 1):
@@ -455,11 +501,12 @@ def scrape_facebook_marketplace(
                 print(f"  Reached end of listings (found only {len(listings)} listings)")
                 break
 
-            # Scroll to load next page (infinite scroll)
+            # Scroll to load next page (infinite scroll) with generous delay
             if page_num < max_pages:
                 print(f"  Loading next page...")
                 scroll_page(page, num_scrolls=config.MAX_SCROLLS)
-                time.sleep(2)
+                # Generous random delay between pages (3-8 seconds)
+                random_delay(3.0, 8.0)
 
     except Exception as e:
         print(f"\nError during scraping: {e}")

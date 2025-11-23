@@ -22,7 +22,8 @@ from utils.facebook_marketplace_scraper import (
     build_marketplace_url,
     extract_listings_from_search_page,
     close_popup_dialogs,
-    scroll_page
+    scroll_page,
+    random_delay
 )
 from utils.facebook_marketplace_data_utils import (
     save_listings_to_csv,
@@ -92,7 +93,7 @@ def scrape_page_range(worker_id: int, start_page: int, end_page: int, search_par
 
         # Navigate to marketplace
         page.goto(marketplace_url)
-        time.sleep(3)
+        random_delay(3.0, 6.0)  # Random delay after initial page load
 
         # Scrape pages in assigned range
         for page_num in range(start_page, end_page + 1):
@@ -117,10 +118,11 @@ def scrape_page_range(worker_id: int, start_page: int, end_page: int, search_par
                     print(f"[Worker {worker_id}] Reached end of listings at page {page_num}")
                     break
 
-                # Scroll to load next page
+                # Scroll to load next page with generous random delay
                 if page_num < end_page:
                     scroll_page(page, num_scrolls=config.MAX_SCROLLS)
-                    time.sleep(2)
+                    # Generous random delay between pages (4-10 seconds for parallel workers)
+                    random_delay(4.0, 10.0)
 
             except Exception as e:
                 print(f"[Worker {worker_id}] Error on page {page_num}: {e}")

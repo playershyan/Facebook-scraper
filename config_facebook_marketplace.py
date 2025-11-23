@@ -106,18 +106,49 @@ DEFAULT_MAX_PAGES = 10
 # Number of listings to scrape per page (Facebook typically shows ~20-40)
 EXPECTED_LISTINGS_PER_PAGE = 30
 
-# Scroll settings for infinite scroll pages
-SCROLL_PAUSE_TIME = 2  # seconds
+# Scroll settings for infinite scroll pages (DEPRECATED - now using random delays)
+SCROLL_PAUSE_TIME = 2  # seconds (not used - kept for backward compatibility)
 MAX_SCROLLS = 5  # Maximum number of scrolls per page
+
+# ============================================================================
+# ANTI-DETECTION & RATE LIMITING SETTINGS
+# ============================================================================
+# Random delay ranges (in seconds) to mimic human behavior
+# These are used throughout the scraper to avoid bot detection
+
+# Delays after page loads
+PAGE_LOAD_DELAY_MIN = 3.0
+PAGE_LOAD_DELAY_MAX = 6.0
+
+# Delays between scrolls
+SCROLL_DELAY_MIN = 1.5
+SCROLL_DELAY_MAX = 4.0
+
+# Delays between pages
+PAGE_TRANSITION_DELAY_MIN = 3.0
+PAGE_TRANSITION_DELAY_MAX = 8.0
+
+# Delays for parallel workers (more conservative)
+PARALLEL_PAGE_DELAY_MIN = 4.0
+PARALLEL_PAGE_DELAY_MAX = 10.0
+
+# Delay after login attempt
+LOGIN_DELAY_MIN = 4.0
+LOGIN_DELAY_MAX = 7.0
+
+# Delay after interactions (clicks, form fills)
+INTERACTION_DELAY_MIN = 0.5
+INTERACTION_DELAY_MAX = 2.0
 
 # ============================================================================
 # PARALLEL EXECUTION
 # ============================================================================
-# Number of parallel workers
-NUM_WORKERS = 5
+# Number of parallel workers (reduced from 5 to 3 for better stealth)
+NUM_WORKERS = 3
 
 # Delay between worker starts (seconds) to avoid rate limiting
-WORKER_START_DELAY = 3
+# Increased to be more conservative
+WORKER_START_DELAY = 5
 
 # ============================================================================
 # CSS SELECTORS (Facebook Marketplace structure)
